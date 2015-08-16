@@ -1,47 +1,43 @@
 # Reproducible research Peer assessment 1
-        ---
-        title: "Reproducible Research: Peer Assessment 1"
-        output: 
-        html_document:
-        keep_md: true
-        ---
-```{r global_options, include=FALSE }
-knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='figure/', results='hide', message=FALSE)
-```
+---
+title: "Reproducible Research: Peer Assessment 1"
+output: 
+  html_document:
+    keep_md: true
+---
 
-```{r chunk1, echo=TRUE, results='hide', message=FALSE, warning=FALSE}
+```r
 library(ggplot2)
 library(knitr)
 library(devtools)
+library(Hmisc)
 ```
 ## Loading and preprocessing the data
-```{r chunk2, echo=TRUE}
+
+```r
 unzip("./activity.zip")
 data <- read.csv("./activity.csv", header=T, na.strings="NA")
 totalsteps_day <- aggregate(steps ~ date, data, FUN = sum, simplify = T, na.rm =T)
 ```
-```{r chunk3, fig.height=8, echo=FALSE, results='hide'}
-dir.create("./figure", showWarning = FALSE, recursive = TRUE)
-png("figure/figure1.png")
-p1<-qplot(totalsteps_day$steps, geom = "histogram", xlab = "Total steps per day", ylab = "frequency",binwidth=500)
-print(p1)
-dev.off()
-```
+
 ## What is mean total number of steps taken per day?
-```{r chunk4, echo=TRUE, results='hide'}
+
+```r
 avgSteps <- mean(totalsteps_day$steps, na.rm =F)
 medSteps <- median(totalsteps_day$steps, na.rm=F)
 ```
-        Mean total number of steps taken per day: `r format(avgSteps, scientific=FALSE)`
-        Median total number if steps taken per day:`r format(medSteps, scientific=FALSE)`
+        Mean total number of steps taken per day:10766.19
+        Median total number if steps taken per day:10765
 ## What is the average daily activity pattern?
-```{r chunk5, echo=TRUE, results='hide'}
+
+```r
 avgSteps_TimeBlock <- aggregate(x=list(avgSteps=data$steps), by=list(interval=data$interval), FUN=mean, na.rm=T)
 maxSteps_TimeBlock <- which.max(avgSteps_TimeBlock$avgSteps)
 Time_maxSteps <-  gsub("([0-9]{1,2})([0-9]{2})", "\\1:\\2", avgSteps_TimeBlock[maxSteps_TimeBlock,'interval'])
 ```
 ### 1. Time series plot
-```{r chunk6, echo=TRUE, results='hide'}
+
+```r
 png("./figure/figure2.png")
 p1 <- qplot(avgSteps_TimeBlock$interval, avgSteps_TimeBlock$avgSteps, geom="line", type="l") 
 p1 <- p1 + xlab("5 minute Time interval") + ylab("Average steps taken")
@@ -49,12 +45,13 @@ print(p1)
 dev.off()
 ```
 ### 2. Time interval at when maximum number of steps occurs
-        Maximum number of steps taken in `r Time_maxSteps`        
+        Maximum number of steps taken in 8:35        
 ## Imputing missing values
-```{r  chunk7, echo=TRUE, results='hide'}
+
+```r
 numNA <- length(which(is.na(data$steps)))
-data_Imputed = data
-data_Imputed$steps[is.na(data$steps)] = mean(data$steps, na.rm=T)
+data_Imputed <- data
+data_Imputed$steps <- impute(data$steps, fun=mean)
 class(data_Imputed$steps) <- "integer"
 totalsteps_dayAfterImpute <- aggregate(steps ~ date, data_Imputed, FUN = sum, simplify = T)
 avgStepsAfterImpute <- mean(totalsteps_dayAfterImpute$steps)
@@ -64,11 +61,12 @@ p3<-qplot(totalsteps_dayAfterImpute$steps, geom = "histogram", xlab = "Total ste
 print(p3)
 dev.off()
 ```
-        Number of missing values in steps taken `r numNA`
-        Average steps after imputation `r format(avgStepsAfterImpute, scientific=FALSE, eval=FALSE)`
-        Median steps after imputation `r format(medStepsAfterImpute, scientific=FALSE)`
+        Number of missing values in steps taken 2304
+        Average steps after imputation 10751.74
+        Median steps after imputation 10656
 ## Are there differences in activity patterns between weekdays and weekends?
-```{r chunk8, echo=TRUE, results='hide'}
+
+```r
 data_Imputed$wday <-  ifelse(as.POSIXlt(data_Imputed$date)$wday %in% c(0,6), 'weekend', 'weekday')
 avgSteps_wday <- aggregate(steps ~ interval + wday, data_Imputed, FUN = mean, simplify = T)
 png("./figure/figure4.png")
